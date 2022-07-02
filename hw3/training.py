@@ -108,15 +108,16 @@ class Trainer(abc.ABC):
             if best_acc is None or test_result.accuracy > best_acc:
                 # ====== YOUR CODE: ======
                 best_acc = train_result.accuracy
-                idle_imp = 0
+
+                iter = 0
                 if checkpoints is not None:
-                    torch.save(self.model,checkpoints)
+                    self.save_checkpoint(checkpoint_filename=f'{checkpoints}.pt')
                 # ========================
             else:
                 # ====== YOUR CODE: ======
-                idle_imp += 1
+                iter += 1
                     
-            if (idle_imp==early_stopping):
+            if iter == early_stopping:
                 break
                 # ========================
 
@@ -280,18 +281,17 @@ class RNNTrainer(Trainer):
         #  - Calculate number of correct char predictions
         # ====== YOUR CODE: ======
         scores, self.hidden_state = self.model(x, self.hidden_state)
- 
         scores = torch.transpose(scores, 1, 2)
 
         self.optimizer.zero_grad()
+        
         loss = self.loss_fn(scores, y)
         loss.backward()
+        
         self.optimizer.step()
-
         self.hidden_state.detach_()
 
-        y_pred = torch.argmax(scores, dim=1)
-        num_correct = torch.sum(y == y_pred)
+        num_correct = (y == torch.argmax(scores, dim=1)).sum()   
         # ========================
 
         # Note: scaling num_correct by seq_len because each sample has seq_len
@@ -314,8 +314,7 @@ class RNNTrainer(Trainer):
             scores, self.hidden_state = self.model(x, self.hidden_state)
             scores = torch.transpose(scores, 1, 2)
 
-            y_pred = torch.argmax(scores, dim=1)
-            num_correct = torch.sum(y == y_pred)
+            num_correct = (y == torch.argmax(scores, dim=1)).sum()
             loss = self.loss_fn(scores, y)
             # ========================
 
@@ -345,7 +344,16 @@ class VAETrainer(Trainer):
         x = x.to(self.device)  # Image batch (N,C,H,W)
         # TODO: Train a VAE on one batch.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        self.model.float()
+
+        xr, mu, log_sigma2 = self.model(x)
+
+        self.optimizer.zero_grad()
+
+        loss, data_loss, _ = self.loss_fn(x, xr, mu, log_sigma2)
+        loss.backward()
+
+        self.optimizer.step()
         # ========================
 
         return BatchResult(loss.item(), 1 / data_loss.item())
@@ -357,7 +365,8 @@ class VAETrainer(Trainer):
         with torch.no_grad():
             # TODO: Evaluate a VAE on one batch.
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            xr, mu, log_sigma2 = self.model(x)
+            loss, data_loss, _ = self.loss_fn(x, xr, mu, log_sigma2)
             # ========================
 
         return BatchResult(loss.item(), 1 / data_loss.item())
