@@ -82,7 +82,21 @@ class Trainer(abc.ABC):
             #  - Use the train/test_epoch methods.
             #  - Save losses and accuracies in the lists above.
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            train_result = self.train_epoch(dl_train, verbose=verbose, **kw)
+            train_loss.append(sum(train_result.losses)/len(train_result.losses))
+
+            if isinstance(train_result.accuracy, torch.Tensor):
+                train_acc.append(train_result.accuracy.tolist())
+            else:
+                train_acc.append(train_result.accuracy)
+
+            test_result = self.test_epoch(dl_test, verbose=verbose, **kw)
+            test_loss.append(sum(test_result.losses)/len(test_result.losses))
+
+            if isinstance(test_result.accuracy, torch.Tensor):
+                test_acc.append(test_result.accuracy.tolist())
+            else:
+                test_acc.append(test_result.accuracy)
             # ========================
 
             # TODO:
@@ -93,11 +107,17 @@ class Trainer(abc.ABC):
             #    the checkpoints argument.
             if best_acc is None or test_result.accuracy > best_acc:
                 # ====== YOUR CODE: ======
-                raise NotImplementedError()
+                best_acc = train_result.accuracy
+                idle_imp = 0
+                if checkpoints is not None:
+                    torch.save(self.model,checkpoints)
                 # ========================
             else:
                 # ====== YOUR CODE: ======
-                raise NotImplementedError()
+                idle_imp += 1
+                    
+            if (idle_imp==early_stopping):
+                break
                 # ========================
 
             if post_epoch_fn:
@@ -225,20 +245,23 @@ class Trainer(abc.ABC):
 class RNNTrainer(Trainer):
     def __init__(self, model, loss_fn, optimizer, device=None):
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        super().__init__(model, device)
+        self.hidden_state = None
+        self.optimizer = optimizer
+        self.loss_fn = loss_fn
         # ========================
 
     def train_epoch(self, dl_train: DataLoader, **kw):
         # TODO: Implement modifications to the base method, if needed.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        self.hidden_state = None
         # ========================
         return super().train_epoch(dl_train, **kw)
 
     def test_epoch(self, dl_test: DataLoader, **kw):
         # TODO: Implement modifications to the base method, if needed.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        self.hidden_state = None
         # ========================
         return super().test_epoch(dl_test, **kw)
 
@@ -256,7 +279,19 @@ class RNNTrainer(Trainer):
         #  - Update params
         #  - Calculate number of correct char predictions
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        scores, self.hidden_state = self.model(x, self.hidden_state)
+ 
+        scores = torch.transpose(scores, 1, 2)
+
+        self.optimizer.zero_grad()
+        loss = self.loss_fn(scores, y)
+        loss.backward()
+        self.optimizer.step()
+
+        self.hidden_state.detach_()
+
+        y_pred = torch.argmax(scores, dim=1)
+        num_correct = torch.sum(y == y_pred)
         # ========================
 
         # Note: scaling num_correct by seq_len because each sample has seq_len
@@ -276,7 +311,12 @@ class RNNTrainer(Trainer):
             #  - Loss calculation
             #  - Calculate number of correct predictions
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            scores, self.hidden_state = self.model(x, self.hidden_state)
+            scores = torch.transpose(scores, 1, 2)
+
+            y_pred = torch.argmax(scores, dim=1)
+            num_correct = torch.sum(y == y_pred)
+            loss = self.loss_fn(scores, y)
             # ========================
 
         return BatchResult(loss.item(), num_correct.item() / seq_len)
