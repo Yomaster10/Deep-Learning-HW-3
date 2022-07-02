@@ -2,11 +2,9 @@
 
 Done:
 - charnn.py
+- autoencoder.py
+- training.py
+- gan.py
 
 In Progress:
 - answers.py
-- training.py
-
-To Do:
-- autoencoder.py
-- gan.py
