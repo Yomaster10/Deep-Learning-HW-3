@@ -1,8 +1,12 @@
 # Deep Learning - HW#3
 
-To Do:
-- answers.py
-- autoencoder.py
+Done:
 - charnn.py
-- gan.py
+
+In Progress:
+- answers.py
 - training.py
+
+To Do:
+- autoencoder.py
+- gan.py
