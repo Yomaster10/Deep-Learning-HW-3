@@ -20,7 +20,34 @@ class Discriminator(nn.Module):
         #  You can then use either an affine layer or another conv layer to
         #  flatten the features.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        ## Inspired by Radford, Metz, & Chintala (2016) - no dropout, no pooling, no FC layers
+        
+        modules = []
+
+        # Conv1
+        modules += [nn.Conv2d(in_channels=self.in_size[0], out_channels=64, kernel_size=4, stride=2, padding=1, bias=False)]
+        modules += [nn.LeakyReLU(negative_slope=0.2, inplace=True)]
+
+        # Conv2
+        modules += [nn.Conv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2, padding=1, bias=False)]
+        modules += [nn.BatchNorm2d(128)]
+        modules += [nn.LeakyReLU(negative_slope=0.2, inplace=True)]
+
+        # Conv3
+        modules += [nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1, bias=False)]
+        modules += [nn.BatchNorm2d(256)]
+        modules += [nn.LeakyReLU(negative_slope=0.2, inplace=True)]
+
+        # Conv4
+        modules += [nn.Conv2d(in_channels=256, out_channels=512, kernel_size=4, stride=2, padding=1, bias=False)]
+        modules += [nn.BatchNorm2d(512)]
+        modules += [nn.LeakyReLU(negative_slope=0.2, inplace=True)]
+
+        # Output Layer
+        modules += [nn.Conv2d(in_channels=512, out_channels=1, kernel_size=4, stride=1, padding=0, bias=False)]
+        #modules += [nn.Sigmoid()]
+
+        self.cnn = nn.Sequential(*modules)
         # ========================
 
     def forward(self, x):
@@ -33,7 +60,7 @@ class Discriminator(nn.Module):
         #  No need to apply sigmoid to obtain probability - we'll combine it
         #  with the loss due to improved numerical stability.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        y = self.cnn(x).reshape(-1,1)
         # ========================
         return y
 
@@ -54,7 +81,35 @@ class Generator(nn.Module):
         #  section or implement something new.
         #  You can assume a fixed image size.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        ## Inspired by Radford, Metz, & Chintala (2016) - no dropout, no pooling, no FC layers
+
+        modules = []
+
+        # Conv1
+        modules += [nn.ConvTranspose2d(in_channels=self.z_dim, out_channels=512, kernel_size=4, stride=1, padding=0, bias=False)]
+        modules += [nn.BatchNorm2d(512)]
+        modules += [nn.ReLU(True)]
+
+        # Conv2
+        modules += [nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=4, stride=2, padding=1, bias=False)]
+        modules += [nn.BatchNorm2d(256)]
+        modules += [nn.ReLU(True)]
+
+        # Conv3
+        modules += [nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=4, stride=2, padding=1, bias=False)]
+        modules += [nn.BatchNorm2d(128)]
+        modules += [nn.ReLU(True)]
+
+        # Conv4
+        modules += [nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=4, stride=2, padding=1, bias=False)]
+        modules += [nn.BatchNorm2d(64)]
+        modules += [nn.ReLU(True)]
+
+        # Output Layer
+        modules += [nn.ConvTranspose2d(in_channels=64, out_channels=out_channels, kernel_size=4, stride=2, padding=1, bias=False)]
+        #modules += [nn.Tanh()]
+        
+        self.cnn = nn.Sequential(*modules)
         # ========================
 
     def sample(self, n, with_grad=False):
@@ -71,7 +126,9 @@ class Generator(nn.Module):
         #  Generate n latent space samples and return their reconstructions.
         #  Don't use a loop.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        with torch.set_grad_enabled(with_grad):
+            z = torch.randn_like(torch.zeros(size=(n, self.z_dim)), device=device)
+            samples = self.forward(z=z)
         # ========================
         return samples
 
@@ -85,7 +142,7 @@ class Generator(nn.Module):
         #  Don't forget to make sure the output instances have the same
         #  dynamic range as the original (real) images.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        x = torch.tanh(self.cnn(z.reshape(z.shape[0], z.shape[1], 1, 1)))
         # ========================
         return x
 
@@ -111,7 +168,16 @@ def discriminator_loss_fn(y_data, y_generated, data_label=0, label_noise=0.0):
     #  generated labels.
     #  See pytorch's BCEWithLogitsLoss for a numerically stable implementation.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    def tensor_gen(y, d_l, l_n, dev):
+        return (d_l * torch.ones_like(y, device=dev)) + (l_n * torch.rand_like(y, device=dev)) - (l_n / 2)
+
+    device = y_data.device
+    data_tensor = tensor_gen(y_data, data_label, label_noise, device)
+    gen_tensor = tensor_gen(y_generated, 1-data_label, label_noise, device)
+
+    loss_calc = torch.nn.BCEWithLogitsLoss()
+    loss_data = loss_calc(y_data, data_tensor)
+    loss_generated = loss_calc(y_generated, gen_tensor)
     # ========================
     return loss_data + loss_generated
 
@@ -132,7 +198,9 @@ def generator_loss_fn(y_generated, data_label=0):
     #  Think about what you need to compare the input to, in order to
     #  formulate the loss in terms of Binary Cross Entropy.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    gen_tensor = torch.ones_like(y_generated, device=y_generated.device) * data_label
+    loss_calc = nn.BCEWithLogitsLoss()
+    loss = loss_calc(y_generated, gen_tensor)
     # ========================
     return loss
 
@@ -157,7 +225,13 @@ def train_batch(
     #  2. Calculate discriminator loss
     #  3. Update discriminator parameters
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    fake_dsc = gen_model.sample(n=x_data.shape[0])
+    dsc_optimizer.zero_grad()
+
+    dsc_loss = dsc_loss_fn(dsc_model(x_data), dsc_model(fake_dsc))
+    dsc_loss.backward()
+
+    dsc_optimizer.step()
     # ========================
 
     # TODO: Generator update
@@ -165,7 +239,13 @@ def train_batch(
     #  2. Calculate generator loss
     #  3. Update generator parameters
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    fake_gen = gen_model.sample(n=x_data.shape[0], with_grad=True)
+    gen_optimizer.zero_grad()
+
+    gen_loss = gen_loss_fn(dsc_model(fake_gen))
+    gen_loss.backward()
+
+    gen_optimizer.step()
     # ========================
 
     return dsc_loss.item(), gen_loss.item()
@@ -188,8 +268,13 @@ def save_checkpoint(gen_model, dsc_losses, gen_losses, checkpoint_file):
     #  You should decide what logic to use for deciding when to save.
     #  If you save, set saved to True.
     # ====== YOUR CODE: ======
+    if len(gen_losses) > 1 and len(dsc_losses) > 1:
+            if dsc_losses[-1] < dsc_losses[-2] and gen_losses[-1] < gen_losses[-2]:
+                saved = True
 
-    raise NotImplementedError()
+                torch.save({"model_state": gen_model.state_dict()}, checkpoint_file)
+                print(f"\n*** Saved checkpoint {checkpoint_file}")
+                #torch.save(gen_model, checkpoint_file)
     # ========================
 
     return saved

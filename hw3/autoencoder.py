@@ -118,14 +118,11 @@ class VAE(nn.Module):
         # TODO: Add more layers as needed for encode() and decode().
         # ====== YOUR CODE: ======
         ## Encode layers
-        self.W_mu = nn.Linear(in_features=n_features, out_features=z_dim, bias=False)
-        self.W_sigma = nn.Linear(in_features=n_features, out_features=z_dim, bias=False)
-        self.b_mu = torch.ones(1, z_dim)
-        self.b_sigma = torch.ones(1, z_dim)
+        self.W_mu = nn.Linear(in_features=n_features, out_features=z_dim)
+        self.W_sigma = nn.Linear(in_features=n_features, out_features=z_dim)
 
         ## Decode layer
-        self.W_decode = nn.Linear(in_features=z_dim, out_features=n_features, bias=False)
-        self.b_decode = torch.ones(1, n_features)
+        self.W_decode = nn.Linear(in_features=z_dim, out_features=n_features)
         # ========================
 
     def _check_features(self, in_size):
@@ -148,8 +145,8 @@ class VAE(nn.Module):
         # ====== YOUR CODE: ======
         h = self.features_encoder(x)
 
-        mu = self.W_mu(h.reshape(h.shape[0],-1)) + self.b_mu
-        log_sigma2 = torch.exp(self.W_sigma(h.reshape(h.shape[0],-1))) + self.b_sigma
+        mu = self.W_mu(h.reshape(h.shape[0],-1))
+        log_sigma2 = torch.exp(self.W_sigma(h.reshape(h.shape[0],-1)))
 
         u = torch.randn_like(mu)
         sigma = torch.exp(torch.sqrt(log_sigma2))
@@ -165,7 +162,7 @@ class VAE(nn.Module):
         #  1. Convert latent z to features h with a linear layer.
         #  2. Apply features decoder.
         # ====== YOUR CODE: ======
-        h = self.W_decode(z) + self.b_decode
+        h = self.W_decode(z)
         h = h.reshape([h.shape[0]] + list(self.features_shape))
         x_rec = self.features_decoder(h)
         # ========================
