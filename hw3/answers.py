@@ -202,7 +202,7 @@ def part3_gan_hyperparams():
     hypers['discriminator_optimizer']['type'] = 'Adam'
     hypers['discriminator_optimizer']['lr'] = 0.0015
     hypers['generator_optimizer']['type'] = 'Adam'
-    hypers['generator_optimizer']['lr'] = 0.001
+    hypers['generator_optimizer']['lr'] = 0.0015
     # ========================
     return hypers
 
