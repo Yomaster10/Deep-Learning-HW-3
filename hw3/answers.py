@@ -195,14 +195,16 @@ def part3_gan_hyperparams():
     # TODO: Tweak the hyperparameters to train your GAN.
     # ====== YOUR CODE: ======
 
-    hypers['batch_size'] = 16
-    hypers['z_dim'] = 12
+    hypers['batch_size'] = 128
+    hypers['z_dim'] = 3
     hypers['data_label'] = 1
     hypers['label_noise'] = 0.2
     hypers['discriminator_optimizer']['type'] = 'Adam'
-    hypers['discriminator_optimizer']['lr'] = 0.0015
+    hypers['discriminator_optimizer']['lr'] = 0.0002
+    hypers['discriminator_optimizer']['betas'] = (0.5, 0.999)
     hypers['generator_optimizer']['type'] = 'Adam'
-    hypers['generator_optimizer']['lr'] = 0.0015
+    hypers['generator_optimizer']['lr'] = 0.0002
+    hypers['generator_optimizer']['betas'] = (0.5, 0.999)
     # ========================
     return hypers
 
@@ -224,7 +226,11 @@ loss is extremely high, it could cause the generator loss to be low even though 
 part3_q3 = r"""
 The main difference between the images generated from the two models seems to be the colors and the features learned by
 each model.
-It seems that the VAE model results have more details in the face area, while the GAN results have more details in the body area and the colors are different.
+It seems that the VAE model results have more details in the face area, while the GAN results have more details in the body area and the colors of the background.
+Because the architectures are different it seems that the features learned are also different. it could be the case that the features learned to fool the discriminator
+are not necessarily the sharpnes of the face, thus causing the images to appear blurry in that area.
+It also seems that the VAE model did a better job in learning features that allow us (as humans) to recognize the image as
+George Bush.
 
 """
 
