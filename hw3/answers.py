@@ -184,69 +184,49 @@ def part3_gan_hyperparams():
         discriminator_optimizer=dict(
             type="",  # Any name in nn.optim like SGD, Adam
             lr=0.0,
-            betas=(0.0, 0.0)
             # You an add extra args for the optimizer here
         ),
         generator_optimizer=dict(
             type="",  # Any name in nn.optim like SGD, Adam
             lr=0.0,
-            betas=(0.0, 0.0)
             # You an add extra args for the optimizer here
         ),
     )
     # TODO: Tweak the hyperparameters to train your GAN.
     # ====== YOUR CODE: ======
-    hypers['batch_size'] = 128
-    hypers['z_dim'] = 3
+
+    hypers['batch_size'] = 16
+    hypers['z_dim'] = 12
     hypers['data_label'] = 1
     hypers['label_noise'] = 0.2
     hypers['discriminator_optimizer']['type'] = 'Adam'
-    hypers['discriminator_optimizer']['lr'] = 0.0002
-    hypers['discriminator_optimizer']['betas'] = (0.5, 0.999)
+    hypers['discriminator_optimizer']['lr'] = 0.0015
     hypers['generator_optimizer']['type'] = 'Adam'
-    hypers['generator_optimizer']['lr'] = 0.0002
-    hypers['generator_optimizer']['betas'] = (0.5, 0.999)
+    hypers['generator_optimizer']['lr'] = 0.001
     # ========================
     return hypers
 
 
 part3_q1 = r"""
-**Your answer:**
-
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
-
+In the case of GANs, we want to keep the gradients during training for the generator and discriminator separately because they are trained separately.
+When training the generator we maintain gradients of the generator and not the discriminator and vice versa.
 """
 
 part3_q2 = r"""
-**Your answer:**
+1.	**NO**. The entire model loss depends on both the generator loss and the discriminator loss and thus the
+loss might still be too high even if the generator loss went under some threshold. For example if the discriminator
+loss is extremely high, it could cause the generator loss to be low even though the images that it generates are bad.
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+2.	It could mean that generator’s learning speed is higher than the discriminator’s and that the discriminator is not learning fast enough, to keep up with the generator’s learning pace.
 
 """
 
 part3_q3 = r"""
-**Your answer:**
-
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+The main difference between the images generated from the two models seems to be the colors and the features learned by
+each model.
+It seems that the VAE model results have more details in the face area, while the GAN results have more details in the body area and the colors are different.
 
 """
+
 
 # ==============
