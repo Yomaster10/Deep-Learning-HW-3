@@ -5,6 +5,4 @@ Done:
 - autoencoder.py
 - training.py
 - gan.py
-
-In Progress:
 - answers.py
